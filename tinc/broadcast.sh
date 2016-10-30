@@ -17,6 +17,17 @@ RED='\033[1;31m'
 NC='\033[0m'
 
 ## Subprocess
+check_argument(){
+    for arg in $*
+    do
+        eval arg_value=\$${arg}
+        if [ ${#arg_value} -eq 0 ] || [ ${arg_value:0:1} == "-" ]; then
+            printf "${RED}Unknown argument value: ${arg_value}${NC}\n"
+            print_help
+        fi
+    done
+}
+
 upload_ssh_keys(){
     pub_key=`cat ~/.ssh/id_rsa.pub`
     echo $pub_key
@@ -131,9 +142,7 @@ do
 shift
 done
 
-if [ ${#privnet_name} -eq 0 -o ${#main_domain} -eq 0 ]; then
-    print_help
-fi
+check_argument privnet_name main_domain
 
 echo "[INFO]Process start..."
 parse_remote_hosts

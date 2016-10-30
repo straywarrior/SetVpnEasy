@@ -12,6 +12,17 @@ NC='\033[0m'
 
 
 ## Subprocess
+check_argument(){
+    for arg in $*
+    do
+        eval arg_value=\$${arg}
+        if [ ${#arg_value} -eq 0 ] || [ ${arg_value:0:1} == "-" ]; then
+            printf "${RED}Unknown argument value: ${arg_value}${NC}\n"
+            print_help
+        fi
+    done
+}
+
 install_tinc(){
     local system=` lsb_release -i -s | tr '[A-Z]' '[a-z]' `
     printf "[INFO]Current system type: ${system}\n"
@@ -34,19 +45,25 @@ install_tinc(){
 }
 
 configure_tinc(){
-    remote_servers=${*:5}
+    local privnet_name=$1
+    local host_name=$2
+    local main_domain=$3
+    local private_ip=$4
+    local port=$5
+    local remote_servers=${*:6}
     printf "\nTinc configuration:\n"
-    printf "${YELLOW}|PrivNetwork: \t$1\n|Hostname: \t$2\n|Domain: \t$3 \n|PrivateIP: \t$4\n"
-    printf "|ConnectTo: \t${remote_servers}\n${NC}\n"
+    printf "${YELLOW}|PrivNetwork:\t${privnet_name}\n"
+    printf "|Hostname:\t${host_name}\n"
+    printf "|Domain:\t${main_domain} \n"
+    printf "|PrivateIP:\t${private_ip}\n"
+    printf "|Port:\t\t${port}\n"
+    printf "|ConnectTo:\t${remote_servers}\n${NC}\n"
     printf "Confirm the configuration above [y/N]:"
     read confirm
     if [ "$confirm" != "y" -a "$confirm" != "Y" ]; then
         return
     fi
-    local privnet_name=$1
-    local host_name=$2
-    local main_domain=$3
-    local private_ip=$4
+
     local conf_prefix=/etc/tinc/${privnet_name}
     mkdir -p ${conf_prefix}
     mkdir -p ${conf_prefix}/hosts
@@ -59,7 +76,7 @@ configure_tinc(){
     done
 
     printf "[INFO]Generate hosts/${host_name} ...\n"
-    printf "Address = ${host_name}.${main_domain}\nPort = 655" \
+    printf "Address = ${host_name}.${main_domain}\nPort = ${port}" \
         > ${conf_prefix}/hosts/${host_name}
 
     printf "[INFO]Generate Key-Pairs ...\n"
@@ -79,7 +96,7 @@ print_help(){
     cat <<EOF
 usage: setup-host.sh <--privnet-name privnet_name> <--host-name host_name>
                      <--main-domain main_domain> <--private-ip private_ip>
-                     [--connect-to remote-host1 ...]
+                     [--port port] [--connect-to remote-host1 ...]
                      [--try-install-tinc]
 
 EOF
@@ -89,9 +106,11 @@ EOF
 
 ## Main process
 need_install_tinc=false
-if [ $# -lt 8 ]; then
-    print_help
-fi
+privnet_name=
+host_name=
+main_domain=
+private_ip=
+port=655
 
 while [[ $# -gt 0 ]]
 do
@@ -119,6 +138,10 @@ do
             private_ip="$2"
             shift
             ;;
+        --port)
+            port="$2"
+            shift
+            ;;
         --connect-to)
             while [[ $# -gt 1 ]]; do
                 value=$2
@@ -138,11 +161,13 @@ do
 shift
 done
 
+check_argument privnet_name host_name main_domain private_ip
+
 echo "[INFO]Process start..."
 
 if [ $need_install_tinc == true ]; then
     install_tinc
 fi
-configure_tinc $privnet_name $host_name $main_domain $private_ip $remotes
+configure_tinc $privnet_name $host_name $main_domain $private_ip $port $remotes
 
 echo "[INFO]All process done."
