@@ -88,6 +88,7 @@ configure_tinc(){
         > ${conf_prefix}/tinc-up
     printf "#/bin/sh\nifconfig \$INTERFACE down" \
         > ${conf_prefix}/tinc-down
+    chmod +x ${conf_prefix}/tinc-up ${conf_prefix}/tinc-down
 
     printf "[INFO]Tinc Configuration Done.\n"
 }
