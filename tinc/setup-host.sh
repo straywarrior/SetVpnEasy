@@ -103,6 +103,23 @@ configure_tinc(){
     printf "[INFO]Tinc Configuration Done.\n"
 }
 
+enable_ip_forward() {
+    printf "[INFO]Try to enable IP forwarding ...\n"
+    sysctl -w net.ipv4.ip_forward=1
+    if cat /proc/sys/net/ipv4/ip_forward; then
+        printf "${RED}Failed to enable IP forwarding${NC}\n"
+        exit
+    fi
+    if grep "net.ipv4.ip_forward" /etc/sysctl.conf; then
+        echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+    else
+        printf "To be safe, change /etc/sysctl.conf manually to set net.ipv4.ip_forward = 1\n"
+        printf "Suggested command:\n"
+        printf "sed -i.backup 's/^.*net.ipv4.ip_forward.*$/net.ipv4.ip_forward = 1/' /etc/sysctl.conf\n"
+    fi
+    printf "[INFO]IP forwarding enabled\n"
+}
+
 print_help(){
     cat <<EOF
 usage: setup-host.sh <--privnet-name privnet_name> <--host-name host_name>
