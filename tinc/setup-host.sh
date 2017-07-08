@@ -23,8 +23,17 @@ check_argument(){
     done
 }
 
+detect_system_type() {
+    if (lsb_release > /dev/null 2>&1); then
+        system=` lsb_release -i -s | tr '[A-Z]' '[a-z]' `
+    elif (cat /etc/redhat-release > /dev/null 2>&1); then
+        system=` cat /etc/redhat-release | tr '[A-Z]' '[a-z]' `
+    fi
+    echo $system
+}
+
 install_tinc(){
-    local system=` lsb_release -i -s | tr '[A-Z]' '[a-z]' `
+    system=$(detect_system_type)
     printf "[INFO]Current system type: ${system}\n"
     printf "${YELLOW}[INFO]Install tinc ...\n${NC}"
     case "$system" in
@@ -32,7 +41,8 @@ install_tinc(){
             apt-get install tinc -y
             ;;
         *centos*)
-            yum install tinc -y
+            yum install epel-release -y
+            yum install tinc --enablerepo=epel -y
             ;;
         *debian*)
             apt-get install tinc -y
